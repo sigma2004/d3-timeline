@@ -1,3 +1,4 @@
+//forked from: https://github.com/jiahuang/d3-timeline
 // vim: ts=2 sw=2
 (function () {
   d3.timeline = function() {
@@ -46,7 +47,8 @@
         showAxisNav = false,
         showAxisCalendarYear = false,
         axisBgColor = "white",
-        chartData = {}
+        chartData = {},
+        scaleFactor
       ;
 
     var appendTimeAxis = function(g, xAxis, yPosition) {
@@ -218,7 +220,7 @@
         }
       }
 
-      var scaleFactor = (1/(ending - beginning)) * (width - margin.left - margin.right);
+      scaleFactor = (1/(ending - beginning)) * (width - margin.left - margin.right);
 
       // draw the axis
       var xScale = d3.time.scale()
@@ -267,24 +269,24 @@
               if( colorPropertyName ){
                 dColorPropName = d[colorPropertyName];
                 if ( dColorPropName ) {
-                  return colorCycle( dColorPropName );
+                  return colorCycle( dColorPropName);
                 } else {
-                  return colorCycle( datum[colorPropertyName] );
+                  return colorCycle( datum[colorPropertyName]);
                 }
               }
               return colorCycle(index);
             })
             .on("mousemove", function (d, i) {
-              hover(d, index, datum);
+              hover.apply(this, [d, index, datum]);
             })
             .on("mouseover", function (d, i) {
-              mouseover(d, i, datum);
+              mouseover.apply(this, [d, i, datum]);
             })
             .on("mouseout", function (d, i) {
-              mouseout(d, i, datum);
+              mouseout.apply(this, [d, i, datum]);
             })
             .on("click", function (d, i) {
-              click(d, index, datum);
+              click.apply(this, [d, index, datum]);
             })
             .attr("class", function (d, i) {
               return datum.class ? "timelineSeries_"+datum.class : "timelineSeries_"+index;
@@ -354,14 +356,15 @@
       if (timeAxisTick) { appendTimeAxisTick(g, xAxis, maxStack); }
 
       if (width > gParentSize.width) {
-        var move = function() {
-          var x = Math.min(0, Math.max(gParentSize.width - width, d3.event.translate[0]));
-          zoom.translate([x, 0]);
-          g.attr("transform", "translate(" + x + ",0)");
+        timeline.move = function(p) {
+      var y = p.y || 0; 
+              x = p.x || Math.min(0, Math.max(gParentSize.width - width, d3.event.translate[0]));
+          zoom.translate([x, y]);
+          g.attr("transform", "translate(" + x + ","+y+")");
           scroll(x*scaleFactor, xScale);
         };
 
-        var zoom = d3.behavior.zoom().x(xScale).on("zoom", move);
+        var zoom = d3.behavior.zoom().x(xScale).on("zoom", timeline.move);
 
         gParent
           .attr("class", "scrollable")
@@ -457,6 +460,9 @@
     }
 
     // SETTINGS
+    timeline.getScaleFactor = function(){
+      return scaleFactor;
+    };
 
     timeline.margin = function (p) {
       if (!arguments.length) return margin;
